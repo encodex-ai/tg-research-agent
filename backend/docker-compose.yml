@@ -1,0 +1,17 @@
+version: "3.3"
+services:
+  bot:
+    image: backend-bot-2.0
+    build:
+      context: .
+    ports:
+      - "8080:8080" # Map external 8080  to internal 8080
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

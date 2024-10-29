@@ -1,0 +1,29 @@
+{
+  "dockerfile_lines": [],
+  "graphs": {
+    "research": "./app/agents/research_agent/graph.py:graph",
+    "chat": "./app/agents/chat_agent/graph.py:graph"
+  },
+  "env": [
+    "FLASK_ENV",
+    "SECRET_KEY",
+    "MONGO_URI",
+    "DB_NAME",
+    "SERPER_API_KEY",
+    "TELEGRAM_BOT_TOKEN",
+    "LLM_TYPE",
+    "CLAUDE_API_KEY",
+    "OPENAI_API_KEY",
+    "OLLAMA_API_URL",
+    "MODEL_NAME",
+    "LOG_LEVEL",
+    "MAX_TOKENS",
+    "TEMPERATURE",
+    "LANGCHAIN_TRACING_V2",
+    "LANGCHAIN_ENDPOINT",
+    "LANGCHAIN_API_KEY",
+    "LANGCHAIN_PROJECT"
+  ],
+  "python_version": "3.12",
+  "dependencies": ["."]
+}
