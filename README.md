@@ -71,6 +71,7 @@ Similar to Perplexity.ai, Jarvis performs real-time web searches to answer your 
 - There is a rate limit of 8 research calls on the published bot
 - The bot is not optimized for scaling or performance, it is intended to be run locally
   - If this was to be deployed we would recommend splitting the agent from the telegram service
+- The webhook is not secure and other components would benefit from some refactoring
 
 ## Development Guide
 
