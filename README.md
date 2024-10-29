@@ -242,7 +242,7 @@ Coming soon
 
 ### Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. Let us know if you have any questions or feedback, feel free to reach out to Cam at <c@encodex.dev> or Ewan at <e@encodex.dev>
+Contributions are welcome! Please feel free to submit a Pull Request. Let us know if you have any questions or feedback, feel free to reach out to Cam at <c@encodex.dev> or Ewan at <ewanmay3@gmail.com>
 
 ### License
 
