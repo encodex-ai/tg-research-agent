@@ -1,0 +1,6 @@
+
+backend/.env.prod
+.env
+**/.env
+*.pyc
+.DS_Store
