@@ -1,0 +1,103 @@
+name: Telegram Bot CI/CD
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME }}
+  REGION: us-central1
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          poetry install
+      - name: Run tests
+        run: |
+          poetry run pytest
+
+  build-and-deploy:
+    name: Build and Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Step 1: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Step 2: Set up Google Cloud SDK
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          install_components: "anthos-auth, gke-gcloud-auth-plugin"
+
+      # Step 3: Configure Docker for Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # Step 4: Build and Push Container
+      - name: Build and Push Container
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/telegram-bot-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} .
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/telegram-bot-repo/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      # Step 5: Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/telegram-bot-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars "
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }},
+            MONGODB_ATLAS_URI=${{ secrets.MONGODB_ATLAS_URI }},
+            CLOUD_RUN_SERVICE_URL=${{ secrets.CLOUD_RUN_SERVICE_URL }},
+            DB_NAME=${{ secrets.DB_NAME }},
+            SERPER_API_KEY=${{ secrets.SERPER_API_KEY }},
+            LLM_TYPE=${{ secrets.LLM_TYPE }},
+            MODEL_NAME=${{ secrets.MODEL_NAME }},
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }},
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},
+            LOG_LEVEL=${{ secrets.LOG_LEVEL }},
+            MAX_TOKENS=${{ secrets.MAX_TOKENS }},
+            TEMPERATURE=${{ secrets.TEMPERATURE }},
+            SERVER=${{ secrets.SERVER }},
+            ENVIRONMENT=prod
+            "
+          echo "::set-output name=url::$(gcloud run services describe ${{ env.SERVICE_NAME }} --platform managed --region ${{ env.REGION }} --format 'value(status.url)')"
+
+      # Step 6: Set webhook
+      - name: Set webhook
+        run: |
+          curl -X GET ${{ steps.deploy.outputs.url }}/set_webhook
